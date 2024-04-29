@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+
+    <div class="background-square">
+        <div class="container">
+            <h1 class="title">Task Manager</h1>
+            <form action="/login" method="POST">
+                <select id="username" class="dropdown" name="username">
+                <option value="" disabled selected>Select User</option>
+                <% usernames.forEach(function(username) { %>
+                    <option value="<%= username %>">
+                        <%= username %>
+                    </option>
+                <% }); %>
+                </select>
+                <br>
+                <button type="submit" class="button">Login</button>
+            </form>
+        </div>
+        <form action="/add" method="GET" class="adduser">
+            <button type="submit" class="button">Add User</button>
+        </form>
+    </div>
+    <div class="info">
+        <button class="info-btn">ℹ</button>
+        
+        <div class="info-content">
+            <p>This is a task manager. Select a user and then login and create a new user if </p>
+        </div>
+    </div>
+
+
+
+</body>
+
+</html>

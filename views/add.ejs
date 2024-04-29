@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add User</title>
+    <link rel="stylesheet" href="/styles.css">
+    <style>
+        .centered-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px; /* Adjust the padding as needed */
+        }
+
+        .centered-container form {
+            padding-bottom: 20px;
+        }
+
+    
+        .centered-container>* {
+            margin-bottom: 10px;
+        }
+
+        .scrollable-container {
+            width: 300px;
+            height: 300px; 
+            overflow-y: scroll; 
+            border: 1px solid #ccc; 
+            background-color: #333; 
+            padding: 5px; 
+            border-radius: 10px; 
+        }
+
+        .username-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee; 
+            color: white;
+        }
+    </style>
+</head>
+
+
+<body>
+    <div class="background-square">
+        <div class="container">
+        <h1 class="title">Existing Users</h1>
+        <div class="scrollable-container">
+            <% usernames.forEach(function(username) { %>
+                <div class="username-item">
+                    <%= username %>
+                </div>
+                <% }); %>
+        </div>
+        
+    </div>
+
+
+    <div class="centered-container">
+        <form action="/adduser" method="POST">
+            <input type="text" id="textbox" name="textbox" placeholder="Add Username" style="width: 200px;" required>
+            <br>
+            <button type="submit" class="button" style="margin-top: 10px;">Add user</button>
+        </form>
+    </div>
+    
+    <div class="info">
+        <button class="info-btn">ℹ</button>
+        <div class="info-content">
+            <p> Enter a unique username and then click add User, or click the back button to go back.
+                Scroll to view exisiting usernames </p>
+        </div>
+        
+    </div>
+    <form action="/" method="GET" class="adduser">
+        <button type="submit" class="button">back</button>
+    </form>
+
+</body>
+
+</html>
