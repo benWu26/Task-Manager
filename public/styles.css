@@ -122,7 +122,7 @@ input[type="text"] {
     background: linear-gradient(to bottom right, #4e54c8, #8f94fb, #c7ced9);
     padding: 20px;
     min-height: calc(100vh - 100px);
-    padding-bottom: 200px;
+    padding-bottom: 300px;
 }
 
 .task-list {
@@ -203,4 +203,10 @@ input[type="text"] {
     top: 20px;
     left: 20px;
     width: 200px;
+}
+
+.title-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }

@@ -10,28 +10,12 @@ app.use(session({
     saveUninitialized: true
 }));
 
-
-usernames = ['user1', 'user2', 'user3', 'user4', 'user5', 'user6', 'user7', 'user8', 'user9', 'user10'];
-tasks = [
-    {
-        title: "Task 1",
-        notes: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
-        owner: "User1",
-        completeness: "Incomplete"
-    },
-    {
-        title: "Task 2",
-        notes: "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-        owner: "User2",
-        completeness: "Complete"
-    },
-    {
-        title: "Task 3",
-        notes: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-        owner: "User3",
-        completeness: "Incomplete"
-    },
-];
+var Airtable = require('airtable');
+Airtable.configure({
+    endpointUrl: 'https://api.airtable.com',
+    apiKey: 'patixKaRaL801PpcM.8d8e116fb0612361d810b95536d3ff4173acf020707d876ca64816af9fa083f2'
+});
+var base = Airtable.base('appJfJ1kVAaWBtNLM');
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
@@ -41,37 +25,61 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 
-app.get('/', (req, res) => {
-    if (req.session.username) {
-        // If a user is logged in, render the home page
-        res.render('home', { usernames: usernames, tasks: tasks });
-    } else {
-        // If no user is logged in, render the index page
-        res.render('index', { usernames: usernames });
+app.get('/', async (req, res) => {
+    try {
+        const records = await getUserData();
+        const tasks = await getTasksById(req.session.username)
+        if (req.session.username) {
+            res.render('home', { records: records, tasks: tasks });
+        } else {
+            res.render('index', { records : records });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).send('Internal Server Error');
     }
 });
 
-app.get('/add', (req, res) => {
+app.get('/add', async (req, res) => {
+    const usernames = await getUsernames();
     res.render('add', { usernames: usernames });
 });
 
-app.post('/login', (req, res) => {
-    console.log(req.body);
+app.post('/login', async (req, res) => {
     const username = req.body.username;
+    var records;
+    try {
+        records = await getUserData();
+    } catch (error) {
+        console.error(error);
+    }
 
+    var tasks;
+    try {
+        tasks = await getTasksById(username);
+    } catch (error) {
+        console.error(error);
+    }
+    
     if (!username) {
         res.status(400).send('Please select a valid username.');
     } else {
         req.session.username = username;
-        res.render('home', { usernames: usernames, tasks: tasks})
+        res.render('home', { records: records, tasks: tasks})
     }
 });
 
-app.post('/adduser', (req, res) => {
+app.post('/adduser', async (req, res) => {
     const newUsername = req.body.textbox;
-
+    var usernames;
+    try {
+        usernames = await getUsernames();
+    } catch (error) {
+            console.error(error);
+            res.status(500).send('Internal Server Error');
+    }
     if (!usernames.includes(newUsername)) {
-        usernames.push(newUsername);
+        createUserWithTasks(newUsername);
         console.log(`Added new user: ${newUsername}`);
         res.redirect('/');
     } else {
@@ -81,7 +89,6 @@ app.post('/adduser', (req, res) => {
 
 
 app.get('/logout', (req, res) => {
-    // Destroy the session when the user logs out
     req.session.destroy(err => {
         if (err) {
             console.error('Error destroying session:', err);
@@ -92,40 +99,21 @@ app.get('/logout', (req, res) => {
 
 
 app.post('/updateTask', (req, res) => {
-    const title = req.body.title;
+    const id = req.body.id;
+    const name = req.body.name;
     const notes = req.body.notes;
-    const owner = req.body.owner;
-    const completeness = req.body.completeness;
+    const status = req.body.status; 
 
-    // Find the task that matches the specified title, notes, and owner
-    const matchedTaskIndex = tasks.findIndex(task => task.title === title && task.notes === notes && task.owner === owner);
+    console.log("id", id, "name", name, "notes", notes, "status", status);
+    updateTask(id, name, notes, status, req.session.username);
 
-    if (matchedTaskIndex !== -1) {
-        // Update the completeness of the matched task
-        tasks[matchedTaskIndex].completeness = completeness;
-        console.log(`Updated completeness of task '${title}' to ${completeness}`);
-        res.sendStatus(200);
-    } else {
-        res.status(400).send('Task not found.');
-    }
+    res.sendStatus(200);
 });
 
 app.post('/deleteTask', (req, res) => {
-    const title = req.body.title;
-    const notes = req.body.notes;
-    const owner = req.body.owner;
-
-    // Find the task that matches the specified title, notes, and owner
-    const matchedTaskIndex = tasks.findIndex(task => task.title === title && task.notes === notes && task.owner === owner);
-
-    if (matchedTaskIndex !== -1) {
-        // Delete the matched task
-        tasks.splice(matchedTaskIndex, 1);
-        console.log(`Deleted task '${title}'`);
-        res.sendStatus(200);
-    } else {
-        res.status(400).send('Task not found.');
-    }
+    const id = req.body.id;
+    deleteTaskById(id);
+    res.redirect('/');
 });
 
 app.post('/addtask', (req, res) => {
@@ -138,22 +126,7 @@ app.post('/addtask', (req, res) => {
         return;
     }
 
-    const isDuplicate = tasks.some(task =>
-        task.title === title && task.notes === notes && task.owner === owner
-    );
-
-    if (isDuplicate) {
-        res.status(400).send('Duplicate task.');
-        return;
-    }
-
-
-    tasks.push({
-        title: title,
-        notes: notes,
-        owner: owner,
-        completeness: "Incomplete" 
-    });
+    createTask(title, notes, owner);
 
     res.redirect('/');
 });
@@ -164,3 +137,169 @@ app.post('/addtask', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+
+
+
+
+/* all backend functions */
+
+
+function getUsernames() {
+    return new Promise((resolve, reject) => {
+        const usernames = [];
+
+        base('Users').select({
+            view: "Grid view"
+        }).eachPage(function page(records, fetchNextPage) {
+            records.forEach(function (record) {
+                usernames.push(record.get('Name'));
+            });
+
+            fetchNextPage();
+
+        }, function done(err) {
+            if (err) {
+                console.error(err);
+                reject(err);
+                return;
+            }
+            resolve(usernames);
+        });
+    });
+}
+
+
+function createUserWithTasks(name) {
+    base('Users').create([
+        {
+            "fields": {
+                "Name": name,
+                "Tasks": []
+            }
+        }
+    ], function (err, records) {
+        if (err) {
+            console.error(err);
+            return;
+        }
+        records.forEach(function (record) {
+            console.log(record.getId());
+        });
+    });
+}
+
+function getUserData() {
+    return new Promise((resolve, reject) => {
+        const users = [];
+
+        base('Users').select({
+            view: "Grid view"
+        }).eachPage(function page(records, fetchNextPage) {
+            records.forEach(function (record) {
+                users.push({
+                    id: record.id,
+                    name: record.get('Name'),
+                    tasks: record.get('Tasks')
+                });
+            });
+
+            fetchNextPage();
+
+        }, function done(err) {
+            if (err) {
+                console.error(err);
+                reject(err);
+                return;
+            }
+            resolve(users);
+        });
+    });
+}
+
+function getTasksById(id) {
+    return new Promise((resolve, reject) => {
+        const tasks = [];
+
+        base('Tasks').select({
+            view: "Grid view"
+        }).eachPage(function page(records, fetchNextPage) {
+            records.forEach(function (record) {
+                const users = record.get('User');
+                if (users && users.includes(id)) { 
+                    const task = {
+                        id: record.id,
+                        notes: record.get('Notes'),
+                        name: record.get('Name'),
+                        status: record.get('Status'),
+                        user: record.get('User')
+                    };
+                    tasks.push(task);
+                }
+            });
+
+            fetchNextPage();
+
+        }, function done(err) {
+            if (err) {
+                console.error(err);
+                reject(err);
+                return;
+            }
+            resolve(tasks);
+        });
+    });
+}
+
+function createTask(name, notes, user) {
+    base('Tasks').create([
+        {
+            "fields": {
+                "Name": name,
+                "Notes": notes,
+                "Status": "Todo",
+                "User": [user]
+            }
+        }
+    ], function (err, records) {
+        if (err) {
+            console.error(err);
+            return;
+        }
+        records.forEach(function (record) {
+            console.log(record.getId());
+        });
+    });
+}
+
+function deleteTaskById(taskId) {
+    base('Tasks').destroy(taskId, function (err, deletedRecords) {
+        if (err) {
+            console.error(err);
+            return;
+        }
+        console.log('Deleted', deletedRecords.length, 'records');
+    });
+}
+
+function updateTask(id, name, notes, status, user) {
+    base('Tasks').update([
+        {
+            "id": id,
+            "fields": {
+                "Name": name,
+                "Notes": notes,
+                "Status": status,
+                "User": [user]
+            }
+        }
+    ], function (err, records) {
+        if (err) {
+            console.error(err);
+            return;
+        }
+        records.forEach(function (record) {
+            console.log(record.get('Name'));
+        });
+    });
+}

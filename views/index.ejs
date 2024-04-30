@@ -16,9 +16,9 @@
             <form action="/login" method="POST">
                 <select id="username" class="dropdown" name="username">
                 <option value="" disabled selected>Select User</option>
-                <% usernames.forEach(function(username) { %>
-                    <option value="<%= username %>">
-                        <%= username %>
+                <% records.forEach(function(record) { %>
+                    <option value="<%= record.id %>">
+                        <%= record.name %>
                     </option>
                 <% }); %>
                 </select>
@@ -34,7 +34,7 @@
         <button class="info-btn">ℹ</button>
         
         <div class="info-content">
-            <p>This is a task manager. Select a user and then login and create a new user if </p>
+            <p>This is a task manager. Select a user and then login and create a new user if needed</p>
         </div>
     </div>
 

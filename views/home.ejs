@@ -9,17 +9,17 @@
 </head>
 
 <body>
-
-    <div class="header">
-        <div class="title" style="padding: 25px;">Task Manager</div>
-        <div class="logout-section">
-            <form action="/logout" method="GET">
-                <button class="button" type="submit">Logout</button>
-            </form>
-        </div>
-    </div>
-
+    
     <div class="main-content">
+        <div class="title-bar">
+            <div class="title" style="padding: 25px;">Task Manager</div>
+            <div class="logout-section">
+
+                <form action="/logout" method="GET">
+                    <button class="button" type="submit">Logout</button>
+                </form>
+            </div>
+        </div>
         <div class="search-container">
                 <input type="text" id="searchInput" placeholder="Search for task..." onkeyup="searchTasks()">
         </div>
@@ -27,26 +27,21 @@
         <div class="task-list">
             <% tasks.forEach(function(task, index) { %>
                 <div class="task">
-                    <div class="task-header">Task: <%= task.title %>
+                    <div class="task-header">Task: <%= task.name %>
                     </div>
                     <div class="task-details">
                         <p><strong>Notes:</strong>
                             <%= task.notes %>
                         </p>
-                        <p><strong>Owner:</strong>
-                            <%= task.owner %>
-                        </p>
                         <p><strong>Completeness:</strong>
-                            <% if (task.completeness == 'Incomplete') { %>
-                                <input type="checkbox" id="<%= task.title %><%= task.notes %><%= task.owner %>"
-                                    onclick="updateCompleteness('<%= task.title %>', '<%= task.notes %>', '<%= task.owner %>')">
-                            <% } else { %>
-                                    <input type="checkbox" id="<%= task.title %><%= task.notes %><%= task.owner %>"
-                                        onclick="updateCompleteness('<%= task.title %>', '<%= task.notes %>', '<%= task.owner %>')"
-                                        checked>
-                            <% } %>
+                            <select id="completenessDropdown<%= task.id %>"
+                                onchange="updateCompleteness('<%= task.id %>', '<%= task.name %>', '<%= task.notes %>')">
+                                <option value="Todo">Todo</option>
+                                <option value="InProgress">In Progress</option>
+                                <option value="Done">Done</option>
+                            </select>
                         </p>
-                        <button onclick="deleteTask('<%= task.title %>', '<%= task.notes %>', '<%= task.owner %>')">Delete
+                        <button onclick="deleteTask('<%= task.id %>')">Delete
                             Task</button>
                     </div>
                 </div>
@@ -58,23 +53,19 @@
     <div class="add-task-section">
         <h2>Add Task</h2>
         <form action="/addtask" method="POST">
-            <select class="dropdown2" name="owner">
-                <% usernames.forEach(function(username) { %>
-                    <option value="<%= username %>">
-                        <%= username %>
-                    </option>
-                    <% }); %>
+            <select class="dropdown2" name="owner" >
+            <option value="" disabled selected>User</option>
+            <% records.forEach(function(record) { %>
+                <option value="<%= record.id %>">
+                    <%= record.name %>
+                </option>
+            <% }); %>
             </select>
             <input type="text" id="Title" name="textbox" placeholder="Task Title" style="width: 200px;" required>
             <textarea class="notes" name="notes" placeholder="Notes"></textarea>
             <button class="button" type="submit">Add Task</button>
         </form>
     </div>
-    <div class="info">
-        <button class="info-btn">ℹ</button>
-        <div class="info-content">
-            <p> Welcome to the home page</p>
-        </div>
     
     </div>
     <script>
@@ -96,52 +87,42 @@
             }
         }
 
-        function updateCompleteness(title, notes, owner) {
-                var taskId = title + notes + owner;
-                console.log('Generated task ID:', taskId); // Log the generated ID
+        function updateCompleteness(id, name, notes) {
+            var completenessDropdown = document.getElementById('completenessDropdown' + id);
+            var newCompleteness = completenessDropdown.value;
 
-                var taskCompleteCheckbox = document.getElementById(taskId);
-                if (!taskCompleteCheckbox) {
-                    console.error('Task checkbox not found:', taskId);
-                    return;
-                }
-
-                var newCompleteness = taskCompleteCheckbox.checked ? 'Complete' : 'Incomplete';
-
-                console.log(newCompleteness);
-
-                fetch('/updateTask', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ title: title, notes: notes, owner: owner, completeness: newCompleteness })
+            fetch('/updateTask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ id: id, name: name, notes: notes, status: newCompleteness })
+            })
+                .then(response => {
+                    if (response.ok) {
+                        console.log('Task completeness updated successfully.');
+                    } else {
+                        console.error('Failed to update task completeness.');
+                    }
                 })
-                    .then(response => {
-                        if (response.ok) {
-                            console.log('Task completeness updated successfully.');
-                        } else {
-                            console.error('Failed to update task completeness.');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                    });
-            }
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
 
 
-        function deleteTask(title, notes, owner) {
+        function deleteTask(id) {
             fetch('/deleteTask', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ title: title, notes: notes, owner: owner })
+                body: JSON.stringify({ id: id })
             })
                 .then(response => {
                     if (response.ok) {
                         console.log('Task deleted successfully.');
-                        location.reload(); // Refresh the page after deleting the task
+                        location.reload();
                     } else {
                         console.error('Failed to delete task.');
                     }
