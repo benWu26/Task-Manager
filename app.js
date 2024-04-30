@@ -13,7 +13,7 @@ app.use(session({
 var Airtable = require('airtable');
 Airtable.configure({
     endpointUrl: 'https://api.airtable.com',
-    apiKey: 'patixKaRaL801PpcM.8d8e116fb0612361d810b95536d3ff4173acf020707d876ca64816af9fa083f2'
+    apiKey: '????'
 });
 var base = Airtable.base('appJfJ1kVAaWBtNLM');
 
