@@ -15,7 +15,7 @@ Airtable.configure({
     endpointUrl: 'https://api.airtable.com',
     apiKey: '????'
 });
-var base = Airtable.base('appJfJ1kVAaWBtNLM');
+var base = Airtable.base('');
 
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
